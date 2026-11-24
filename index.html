@@ -606,6 +606,22 @@ body.fmode .frl{z-index:9}
   .vtabs button,.pbar .vtabs button{flex:1;height:30px;padding:0 10px}
   .top>.vtabs+*{margin-left:12px}
 }
+
+/* v85 mobile: page locked, only #scroller scrolls (like iOS Calendar) */
+html,body{overflow:hidden;overscroll-behavior:none}
+@media (max-width:899px){
+  html,body{position:fixed;inset:0;width:100%;height:100%;touch-action:manipulation}
+  body{height:100%}
+  .top>.vtabs{margin:3px 12px 0;padding:2px}
+  .vtabs button,.pbar .vtabs button{height:26px;font-size:13px}
+  .top>*:not(.vtabs){margin-top:2px;margin-bottom:2px}
+  #range{font-size:13px;margin:0 8px 2px;line-height:1.2}
+  #robar{padding:4px 8px;font-size:12px;line-height:1.3}
+  #robar .btn{padding:3px 8px;font-size:12px}
+  #dhs .dh{padding-top:2px;padding-bottom:2px}
+  #scroller{-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;touch-action:pan-y}
+  #sync{bottom:4px}
+}
 </style>
 </head>
 <body>
@@ -649,7 +665,7 @@ body.fmode .frl{z-index:9}
 <script>
 (function(){
 'use strict';
-var APP_VERSION='2026.11.24-84';
+var APP_VERSION='2026.11.24-86';
 var T0=360,T1=1380;
 /* 每小時高度不等：6、7 點與晚上（18 點起）比較矮，上午／下午（8–17 點）正常 */
 var HW={6:.7,7:.7,18:.7,19:.7,20:.7,21:.7,22:.7},UNIT=44,UCAP=44,YO=[];
@@ -904,7 +920,9 @@ function fit(){
   var h=$('#scroller').clientHeight;if(h<120)return;
   fitH=h;
   var W=0;for(var k=6;k<=22;k++)W+=hw(k);
-  UNIT=clamp(Math.floor((h-44-9)/W),18,UCAP);calcY();
+  UNIT=clamp(Math.floor((h-44-9)/W),18,UCAP);
+  if(window.matchMedia('(max-width:899px)').matches)UNIT=60;/* 手機：固定每小時高度，只有時間格可上下滑 */
+  calcY();
 }
 function cdBadge(days){
   var c=days>=15?'g':(days>=8?'o':'r');
