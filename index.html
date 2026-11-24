@@ -750,6 +750,8 @@ function seed(){
 }
 var S=(function(){try{var d=JSON.parse(localStorage.getItem(LS));if(d&&d.events)return d}catch(e){}return seed()})();
 var CF=(function(){try{return JSON.parse(localStorage.getItem(LSC))||{}}catch(e){return {}}})();
+var DEF_URL='https://script.google.com/macros/s/AKfycbxF4dR7HqygG5pVbue8vNo5DvyfWZkh_idpHDWixjZSgbAACQfredv64LZwD27GxjMb/exec';
+if(!CF.url)CF.url=DEF_URL;
 function persistLocal(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 /* ---------- 複製／貼上事件：滑鼠停在事件上 Ctrl+C，移到想放的日期／時間 Ctrl+V ---------- */
 var HV={id:null,date:null,min:null},CLIP=null;
