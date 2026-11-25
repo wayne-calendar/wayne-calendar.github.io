@@ -98,7 +98,9 @@ body.cwfix #rwh{display:none!important}
 .gut .sep{left:18px}
 #grid{margin-top:9px}
 .col{position:relative;border-left:1px solid var(--line)}
-.hls{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;z-index:3}
+.hls{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;z-index:0}
+.hls.hlt{z-index:3}
+.hls.hlt .hln{background-color:transparent;background-image:linear-gradient(90deg,#8d96a3 0,#8d96a3 7px,transparent 7px,transparent calc(100% - 7px),#8d96a3 calc(100% - 7px),#8d96a3 100%);background-repeat:repeat-x}
 .hln{position:absolute;left:0;right:0;height:1px;background:var(--line)}
 .hln.hf{background:var(--line2)}
 .col.we{background-color:#fafbfc}
@@ -669,7 +671,7 @@ html,body{overflow:hidden;overscroll-behavior:none}
 <script>
 (function(){
 'use strict';
-var APP_VERSION='2026.11.25-89';
+var APP_VERSION='2026.11.25-91';
 var T0=360,T1=1380;
 /* 每小時高度不等：6、7 點與晚上（18 點起）比較矮，上午／下午（8–17 點）正常 */
 var HW={6:.7,7:.7,18:.7,19:.7,20:.7,21:.7,22:.7},UNIT=44,UCAP=44,YO=[];
@@ -677,7 +679,7 @@ function hw(h){return HW[h]||1}
 function calcY(){YO[6]=0;for(var h=6;h<=22;h++)YO[h+1]=YO[h]+UNIT*hw(h)}
 function Y(m){m=clamp(m,T0,T1);var h=Math.min(22,Math.floor(m/60));return YO[h]+(m-h*60)/60*UNIT*hw(h)}
 function M(y){var h=6;while(h<22&&y>=YO[h+1])h++;return h*60+(y-YO[h])/(UNIT*hw(h))*60}
-function hlinesHtml(){var h='';for(var k=6;k<=22;k++){h+='<i class="hln" style="top:'+YO[k]+'px"></i>'}return '<div class="hls">'+h+'</div>'}
+function hlinesHtml(){var h='',t='';for(var k=6;k<=22;k++){h+='<i class="hln" style="top:'+YO[k]+'px"></i>';t+='<i class="hln" style="top:'+YO[k]+'px;background-size:'+(100/V.n)+'% 100%"></i>'}return '<div class="hls">'+h+'</div><div class="hls hlt">'+t+'</div>'}
 var WHO=['內部','P','J','PJ','BU'];
 var ICONS={
   home:{n:'家庭',svg:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-5.5h4V20"/></svg>'},
