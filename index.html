@@ -30,6 +30,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .seg button:last-child{border-right:0}
 .seg button.on{background:var(--acc);color:#fff}
 #range{font-weight:700;font-size:16px;margin:0 4px;min-width:0}
+#mact{display:none;gap:4px;align-items:center;order:10}
 #range small{font-weight:500;color:var(--mute);font-size:12px;margin-left:6px}
 .sp{flex:1}
 .badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--c-urgent);color:#fff;font-size:11px;line-height:18px;text-align:center;margin-left:4px}
@@ -97,7 +98,7 @@ body.cwfix #rwh{display:none!important}
 .gut .sep{left:18px}
 #grid{margin-top:9px}
 .col{position:relative;border-left:1px solid var(--line)}
-.hls{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;z-index:0}
+.hls{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;z-index:3}
 .hln{position:absolute;left:0;right:0;height:1px;background:var(--line)}
 .hln.hf{background:var(--line2)}
 .col.we{background-color:#fafbfc}
@@ -610,12 +611,14 @@ body.fmode .frl{z-index:9}
 /* v85 mobile: page locked, only #scroller scrolls (like iOS Calendar) */
 html,body{overflow:hidden;overscroll-behavior:none}
 @media (max-width:899px){
-  html,body{position:fixed;inset:0;width:100%;height:100%;touch-action:manipulation}
+  html,body{position:fixed;inset:0;width:100%;height:100%;touch-action:pan-y;overflow-x:clip}
   body{height:100%}
   .top>.vtabs{margin:3px 12px 0;padding:2px}
   .vtabs button,.pbar .vtabs button{height:26px;font-size:13px}
   .top>*:not(.vtabs){margin-top:2px;margin-bottom:2px}
-  #range{font-size:13px;margin:0 8px 2px;line-height:1.2}
+  #range{font-size:13px;margin:0 0 2px 8px;line-height:1.2;flex:1 1 calc(100% - 140px);min-width:0}
+  #mact{display:flex;margin-right:8px}
+  #mact .btn.ico{width:34px;font-size:16px}
   #robar{padding:4px 8px;font-size:12px;line-height:1.3}
   #robar .btn{padding:3px 8px;font-size:12px}
   #dhs .dh{padding-top:2px;padding-bottom:2px}
@@ -632,6 +635,7 @@ html,body{overflow:hidden;overscroll-behavior:none}
   <button class="btn" id="today">今天</button>
   <button class="btn ico" id="next" title="下一頁">›</button>
   <div id="range"></div>
+  <div id="mact"><button class="btn ico" id="bUndo" title="復原上一步">↶</button><button class="btn ico" id="bRedo" title="重做">↷</button><button class="btn ico" id="bSync" title="重新整理／同步">⟳</button></div>
   <div class="sp"></div>
   <div class="seg" id="views"><button data-n="1">日</button><button data-n="3">3日</button><button data-n="8">週</button></div>
   <button class="btn hideM" id="btnFrame" title="畫出藍色標示框（可自訂範圍與粗細）">藍框</button>
@@ -665,7 +669,7 @@ html,body{overflow:hidden;overscroll-behavior:none}
 <script>
 (function(){
 'use strict';
-var APP_VERSION='2026.11.24-86';
+var APP_VERSION='2026.11.25-89';
 var T0=360,T1=1380;
 /* 每小時高度不等：6、7 點與晚上（18 點起）比較矮，上午／下午（8–17 點）正常 */
 var HW={6:.7,7:.7,18:.7,19:.7,20:.7,21:.7,22:.7},UNIT=44,UCAP=44,YO=[];
@@ -673,7 +677,7 @@ function hw(h){return HW[h]||1}
 function calcY(){YO[6]=0;for(var h=6;h<=22;h++)YO[h+1]=YO[h]+UNIT*hw(h)}
 function Y(m){m=clamp(m,T0,T1);var h=Math.min(22,Math.floor(m/60));return YO[h]+(m-h*60)/60*UNIT*hw(h)}
 function M(y){var h=6;while(h<22&&y>=YO[h+1])h++;return h*60+(y-YO[h])/(UNIT*hw(h))*60}
-function hlinesHtml(){var h='';for(var k=6;k<=22;k++){h+='<i class="hln" style="top:'+YO[k]+'px"></i><i class="hln hf" style="top:'+(YO[k]+UNIT*hw(k)/2)+'px"></i>'}return '<div class="hls">'+h+'</div>'}
+function hlinesHtml(){var h='';for(var k=6;k<=22;k++){h+='<i class="hln" style="top:'+YO[k]+'px"></i>'}return '<div class="hls">'+h+'</div>'}
 var WHO=['內部','P','J','PJ','BU'];
 var ICONS={
   home:{n:'家庭',svg:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-5.5h4V20"/></svg>'},
@@ -824,12 +828,13 @@ var getEv=function(id){return S.events.find(function(e){return e.id===id})};
 var V={n:innerWidth<700?3:8,start:null,filter:{urgent:1,important:1,fixed:1,routine:1},monthRef:null};
 V.start=V.n>=7?mondayOf(todayS()):todayS();
 var visDates=function(){var a=[];for(var i=0;i<V.n;i++)a.push(addDays(V.start,i));return a};
+function inRM(e,date){var r=e.rm;if(!r||r.length!==2)return true;var m=+date.slice(5,7),a=r[0],b=r[1];return a<=b?(m>=a&&m<=b):(m>=a||m<=b)}
 function occ(date){
   var dow=parseD(date).getDay(),out=[];
   S.events.forEach(function(e){
     if(V.filter[e.cat]===0)return;
     if(e.rdays&&e.rdays.length){
-      if(date>=e.date&&e.rdays.indexOf(dow)>=0&&(e.skip||[]).indexOf(date)<0)out.push({e:e,date:date});
+      if(date>=e.date&&e.rdays.indexOf(dow)>=0&&(e.skip||[]).indexOf(date)<0&&inRM(e,date))out.push({e:e,date:date});
     }else if(e.date===date||(e.date2&&date>=e.date&&date<=e.date2))out.push({e:e,date:date});
   });
   return out;
@@ -1169,7 +1174,7 @@ dayhead.addEventListener('pointerdown',function(e){
 function makeGhost(){
   var g=document.createElement('div');g.className='ev ghost cat-routine';
   g.innerHTML='<div class="ti">新事件</div><div class="tm"></div>';
-  D.colEl.appendChild(g);D.ghost=g;D.gs=D.s0;D.ge=Math.min(D.s0+60,T1);updGhost();
+  D.colEl.appendChild(g);D.ghost=g;D.s0=Math.floor(D.s0/30)*30;D.gs=D.s0;D.ge=Math.min(D.s0+60,T1);updGhost();
 }
 function updGhost(){
   var g=D.ghost;g.style.top=Y(D.gs)+'px';g.style.height=(Y(D.ge)-Y(D.gs)-1)+'px';g.style.left='1px';g.style.right='2px';
@@ -1235,7 +1240,7 @@ function endDrag(e,cancel){
   if(!d.started){
     if(d.dead)return;
     if((d.kind==='move'||d.kind==='rb'||d.kind==='rt')&&d.el){tapEvent(d.id,d.date)}
-    else if(d.kind==='blank'){var hs=clamp(Math.floor(d.s0/60)*60,T0,T1-60);openQuick(d.date,hs,hs+60)}
+    else if(d.kind==='blank'){var hs=clamp(Math.floor(d.s0/30)*30,T0,T1-60);openQuick(d.date,hs,hs+60)}
     return;
   }
   if(d.kind==='pan'){renderAll();return}
@@ -1448,6 +1453,8 @@ function openForm(base,existing,occDate){
   '<div class="fr"><label class="l">人員</label>'+WHO.map(function(w){return '<label class="opt pp" style="--c:#9aa7b4"><input type="checkbox" name="wh" value="'+w+'"'+((e.who||[]).indexOf(w)>=0?' checked':'')+'>'+w+'</label>'}).join('')+'</div>'+
   (S.projects.length?'<div class="fr"><label class="l">專案</label><select id="f_pj"><option value="">（無）</option>'+S.projects.map(function(x){return '<option value="'+x.id+'"'+(e.proj===x.id?' selected':'')+'>'+esc(x.name)+'</option>'}).join('')+'</select></div>':'')+
   '<div class="fr"><label class="l">每週重複</label>'+wds.map(function(w){return '<label class="wd"><input type="checkbox" name="rd" value="'+w+'"'+((e.rdays||[]).indexOf(w)>=0?' checked':'')+'>'+WD[w]+'</label>'}).join('')+'</div>'+
+  '<div class="fr"><label class="l"></label><label style="font-size:13px"><input type="checkbox" id="f_rmc"'+((e.rm&&e.rm.length===2)?' checked':'')+'> 只在特定月份重複</label></div>'+
+  '<div class="fr" id="f_rmr"'+((e.rm&&e.rm.length===2)?'':' hidden')+'><label class="l">月份</label><select id="f_rm1">'+[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){return '<option value="'+m+'"'+(m==((e.rm||[1,5])[0])?' selected':'')+'>'+m+' 月</option>'}).join('')+'</select> ～ <select id="f_rm2">'+[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m){return '<option value="'+m+'"'+(m==((e.rm||[1,5])[1])?' selected':'')+'>'+m+' 月</option>'}).join('')+'</select></div>'+
   '<div class="fr"><label class="l">備註</label><textarea id="f_n" rows="2" class="fl">'+esc(e.note||'')+'</textarea></div>'+
   '<div class="acts">'+(existing&&e.people&&e.people.length?'<button class="btn" id="f_star">記錄表現</button>':'')+(existing?(rep?'<button class="btn danger" id="f_del1">刪除這天</button><button class="btn danger" id="f_del">刪除全部</button>':'<button class="btn danger" id="f_del">刪除</button>'):'')+'<span class="sp"></span><button class="btn" id="f_x">取消</button><button class="btn pri" id="f_ok">儲存</button></div></div>';
   var q=function(s){return dlg.querySelector(s)};
@@ -1486,7 +1493,7 @@ function openForm(base,existing,occDate){
     var sn=!rd.length&&q('#f_sn').checked,sd=sn&&o.since?!!o.sinceDone:false;
     var wh=[].slice.call(dlg.querySelectorAll('[name=wh]:checked')).map(function(x){return x.value});
     var wasDate=existing?existing.date:null;
-    Object.assign(o,{title:title,date:date,date2:(all&&!rd.length&&q('#f_d2').value>date)?q('#f_d2').value:'',allDay:all,start:s,end:en,cat:cat,remind:rem,rdays:rd,note:q('#f_n').value.trim(),ack:false,who:wh,proj:q('#f_pj')?q('#f_pj').value:(e.proj||''),since:sn,sinceDone:sd,pack:q('#f_pk').value,icon:(function(){var v=(dlg.querySelector('[name=ic]:checked')||{}).value||'';return v||(catIcon(cat)?'none':'')})()});
+    Object.assign(o,{title:title,date:date,date2:(all&&!rd.length&&q('#f_d2').value>date)?q('#f_d2').value:'',allDay:all,start:s,end:en,cat:cat,remind:rem,rdays:rd,rm:(rd.length&&q('#f_rmc').checked)?[+q('#f_rm1').value,+q('#f_rm2').value]:[],note:q('#f_n').value.trim(),ack:false,who:wh,proj:q('#f_pj')?q('#f_pj').value:(e.proj||''),since:sn,sinceDone:sd,pack:q('#f_pk').value,icon:(function(){var v=(dlg.querySelector('[name=ic]:checked')||{}).value||'';return v||(catIcon(cat)?'none':'')})()});
     if(!existing)S.events.push(o);
     save();dlg.close();
     /* 只有新增、或使用者真的改了日期才跳到那天；編輯重複事件（開始日很早）存檔時不亂跳 */
@@ -1916,6 +1923,10 @@ var _fm=setFrameMode;setFrameMode=function(on){if(on&&roBlock())return;return _f
 (function(){var f=$('#btnBatch').onclick;$('#btnBatch').onclick=function(){if(roBlock())return;return f.apply(this,arguments)}})();
 $('#ro_over').onclick=function(){LOCK.over=true;setLock(false);toast('已開啟離線編輯：恢復連線後同步，可能覆蓋雲端較新的資料')};
 $('#ro_retry').onclick=function(){pull()};
+document.addEventListener('change',function(e){if(e.target&&e.target.id==='f_rmc'){var r=document.getElementById('f_rmr');if(r)r.hidden=!e.target.checked}});
+$('#bUndo').onclick=function(){if(LOCK.on){roBlock();return}undoGo(-1)};
+$('#bRedo').onclick=function(){if(LOCK.on){roBlock();return}undoGo(1)};
+$('#bSync').onclick=async function(){toast('同步中…');await pull();renderAll();if(!LOCK.on)toast('已重新整理')};
 setLock(true);
 
 /* ---------- cloud sync ---------- */
