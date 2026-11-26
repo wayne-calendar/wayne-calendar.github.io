@@ -99,8 +99,7 @@ body.cwfix #rwh{display:none!important}
 #grid{margin-top:9px}
 .col{position:relative;border-left:1px solid var(--line)}
 .hls{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;z-index:0}
-.hls.hlt{z-index:3}
-.hls.hlt .hln{background-color:transparent;background-image:linear-gradient(90deg,#8d96a3 0,#8d96a3 7px,transparent 7px,transparent calc(100% - 7px),#8d96a3 calc(100% - 7px),#8d96a3 100%);background-repeat:repeat-x}
+.ev .tk{position:absolute;left:0;right:0;height:1px;pointer-events:none;z-index:1;background:linear-gradient(90deg,rgba(60,70,90,.38) 0,rgba(60,70,90,.38) 7px,transparent 7px,transparent calc(100% - 7px),rgba(60,70,90,.38) calc(100% - 7px),rgba(60,70,90,.38) 100%)}
 .hln{position:absolute;left:0;right:0;height:1px;background:var(--line)}
 .hln.hf{background:var(--line2)}
 .col.we{background-color:#fafbfc}
@@ -626,6 +625,14 @@ html,body{overflow:hidden;overscroll-behavior:none}
   #dhs .dh{padding-top:2px;padding-bottom:2px}
   #scroller{-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;touch-action:pan-y}
   #sync{bottom:4px}
+  .cwh,#rwh{display:none!important}
+  :root{--gw:40px}
+  .gut .per{width:13px;font-size:10px;letter-spacing:1px}
+  .gut .sep{left:13px}
+  .gut .hl{right:3px;font-size:12px}
+  .adrow>div:first-child{font-size:10px}
+  #sleep .t1{font-size:11px}
+  #cal,.top,#main{max-width:100vw}
 }
 </style>
 </head>
@@ -671,7 +678,7 @@ html,body{overflow:hidden;overscroll-behavior:none}
 <script>
 (function(){
 'use strict';
-var APP_VERSION='2026.11.25-91';
+var APP_VERSION='2026.11.26-95';
 var T0=360,T1=1380;
 /* 每小時高度不等：6、7 點與晚上（18 點起）比較矮，上午／下午（8–17 點）正常 */
 var HW={6:.7,7:.7,18:.7,19:.7,20:.7,21:.7,22:.7},UNIT=44,UCAP=44,YO=[];
@@ -679,7 +686,7 @@ function hw(h){return HW[h]||1}
 function calcY(){YO[6]=0;for(var h=6;h<=22;h++)YO[h+1]=YO[h]+UNIT*hw(h)}
 function Y(m){m=clamp(m,T0,T1);var h=Math.min(22,Math.floor(m/60));return YO[h]+(m-h*60)/60*UNIT*hw(h)}
 function M(y){var h=6;while(h<22&&y>=YO[h+1])h++;return h*60+(y-YO[h])/(UNIT*hw(h))*60}
-function hlinesHtml(){var h='',t='';for(var k=6;k<=22;k++){h+='<i class="hln" style="top:'+YO[k]+'px"></i>';t+='<i class="hln" style="top:'+YO[k]+'px;background-size:'+(100/V.n)+'% 100%"></i>'}return '<div class="hls">'+h+'</div><div class="hls hlt">'+t+'</div>'}
+function hlinesHtml(){var h='',t='';for(var k=6;k<=22;k++){h+='<i class="hln" style="top:'+YO[k]+'px"></i>';t+='<i class="hln" style="top:'+YO[k]+'px;background-size:'+(100/V.n)+'% 100%"></i>'}return '<div class="hls">'+h+'</div>'}
 var WHO=['內部','P','J','PJ','BU'];
 var ICONS={
   home:{n:'家庭',svg:'<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10v10h13V10"/><path d="M10 20v-5.5h4V20"/></svg>'},
@@ -723,14 +730,15 @@ var uid=function(){return 'e'+Date.now().toString(36)+Math.random().toString(36)
 var LSP='mycal_pref_v1';
 var PREF=(function(){var d={showTime:true,fs:12,cw:0,fw:3,fc:'#1f4bff',catOpen:1,rw:236,sideOpen:1};try{var u=JSON.parse(localStorage.getItem(LSP)||'null');if(u){if(typeof u.showTime==='boolean')d.showTime=u.showTime;if(u.fs>=9&&u.fs<=24)d.fs=+u.fs;if(u.cw>=60&&u.cw<=480)d.cw=+u.cw;if(u.fw>=1&&u.fw<=12)d.fw=+u.fw;if(/^#[0-9a-f]{6}$/i.test(u.fc||''))d.fc=u.fc;if(u.catOpen===0||u.catOpen===1)d.catOpen=u.catOpen;if(u.rw>=200&&u.rw<=700)d.rw=+u.rw;if(u.sideOpen===0||u.sideOpen===1)d.sideOpen=u.sideOpen}}catch(e){}return d})();
 function savePref(){try{localStorage.setItem(LSP,JSON.stringify(PREF))}catch(e){}}
-function colsTpl(){return PREF.cw?'repeat('+V.n+','+PREF.cw+'px)':'repeat('+V.n+',1fr)'}
-function colsW(){return PREF.cw?(PREF.cw*V.n+3)+'px':''}
+function CWE(){return(PREF.cw&&innerWidth>=900)?PREF.cw:0}/* 手機忽略固定欄寬，避免頁面比螢幕寬而左右晃動 */
+function colsTpl(){return CWE()?'repeat('+V.n+','+CWE()+'px)':'repeat('+V.n+',1fr)'}
+function colsW(){return CWE()?(CWE()*V.n+3)+'px':''}
 function applyCols(){
   ['#dhs','#ads'].forEach(function(sel){var e=document.querySelector(sel);if(e){e.style.gridTemplateColumns=colsTpl();e.style.width=colsW()}});
   var c=document.querySelector('.cols');if(c){c.style.gridTemplateColumns=colsTpl();c.style.width=colsW()}
   /* 日欄寬固定時，行事曆本體跟著縮放，右側「專案提醒」貼著它的右緣一起移動 */
-  document.body.classList.toggle('cwfix',!!PREF.cw);document.body.classList.toggle('sidec',!PREF.sideOpen);updRside();alignTop();document.documentElement.style.setProperty('--rw',PREF.rw+'px');
-  var cal=$('#cal');cal.style.flex=PREF.cw?'0 1 calc(var(--gw) + '+(PREF.cw*V.n+3)+'px)':'';
+  document.body.classList.toggle('cwfix',!!CWE());document.body.classList.toggle('sidec',!PREF.sideOpen);updRside();alignTop();document.documentElement.style.setProperty('--rw',PREF.rw+'px');
+  var cal=$('#cal');cal.style.flex=CWE()?'0 1 calc(var(--gw) + '+(CWE()*V.n+3)+'px)':'';
 }
 /* 週視圖：工具列尾端對齊週日欄的右緣（週一那欄起點）；放不下時就不縮，避免換行 */
 function alignTop(){
@@ -754,7 +762,7 @@ function updRside(){
   if(innerWidth>=1500){
     var gw=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--gw'))||62;
     var avail=m.clientWidth-(document.body.classList.contains('sidec')?$('#rail').offsetWidth:sd.offsetWidth);
-    var calMin=PREF.cw?gw+PREF.cw*V.n+3:gw+V.n*90+3,panelMin=PREF.cw?236:PREF.rw;
+    var calMin=CWE()?gw+CWE()*V.n+3:gw+V.n*90+3,panelMin=CWE()?236:PREF.rw;
     hide=calMin+panelMin>avail;
   }
   document.body.classList.toggle('rhide',hide);
@@ -886,8 +894,9 @@ function layoutDay(items){
 function evHtml(it,date){
   var o=it.e,top=Y(it.start)+1,h=Math.max(Y(it.end)-Y(it.start)-2,16),w=100/it.cols;
   var sm=h<(PREF.fs*2.4+3);
+  var tk='';for(var k=Math.floor(it.start/60)+1;k*60<it.end;k++){if(k*60>it.start)tk+='<i class="tk" style="top:'+(Y(k*60)-Y(it.start)-1)+'px"></i>'}
   return '<div class="ev cat-'+o.cat+(sm?' sm':'')+(effIcon(o)?' hasic':'')+((o.rdays&&o.rdays.length)?' rep':'')+'" data-id="'+o.id+'" data-date="'+date+'" style="top:'+top+'px;height:'+h+'px;left:calc('+(it.col*w)+'% + 1px);width:calc('+w+'% - 3px)">'+
-    '<div class="rz rt"></div>'+icoOf(o)+'<div class="ti">'+esc(o.title)+'</div><div class="tm"><span class="tt">'+mm2s(o.start)+'–'+mm2s(o.end)+'</span>'+evTag(o)+'</div><div class="rz rb"></div></div>';
+    tk+'<div class="rz rt"></div>'+icoOf(o)+'<div class="ti">'+esc(o.title)+'</div><div class="tm"><span class="tt">'+mm2s(o.start)+'–'+mm2s(o.end)+'</span>'+evTag(o)+'</div><div class="rz rb"></div></div>';
 }
 function brkHtml(dates,lab){
   var n=dates.length,h='',a=-1;
@@ -906,8 +915,8 @@ function renderGrid(){
   fit();var dates=visDates(),t=todayS(),th=Y(T1),gut='';
   var sepHtml='<div class="sep" style="top:'+Y(720)+'px"></div><div class="sep" style="top:'+Y(1080)+'px"></div>';var sepAll='<div class="sepl" style="top:'+Y(720)+'px"></div><div class="sepl" style="top:'+Y(1080)+'px"></div>';
   [['上午',6,12],['下午',12,18],['晚上',18,23]].forEach(function(r){gut+='<div class="per" style="top:'+Y(r[1]*60)+'px;height:'+(Y(r[2]*60)-Y(r[1]*60))+'px">'+r[0]+'</div>'});
-  for(var h=6;h<=22;h++)gut+='<div class="hl'+((h===12||h===18)?' lo':'')+'" style="top:'+Y(h*60)+'px">'+pad(h)+'</div>';
-  gut+=sepHtml+'<div class="sep" style="top:'+th+'px"></div>';
+  for(var h=6;h<=22;h++)gut+='<div class="hl" style="top:'+Y(h*60)+'px">'+pad(h)+'</div>';
+  gut+='<div class="sep" style="top:'+th+'px"></div>';
   var now=new Date(),nm=now.getHours()*60+now.getMinutes();
   var cols=dates.map(function(d,di){
     var items=occ(d).filter(function(o){return !o.e.allDay}).map(function(o){
